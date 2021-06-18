@@ -13,6 +13,7 @@ param AADClientId string
 
 @minLength(34)
 @maxLength(34)
+@secure()
 param AADClientSecret string
 
 resource myResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {

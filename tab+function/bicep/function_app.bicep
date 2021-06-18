@@ -5,6 +5,7 @@ param functionPrefix string
 param AADClientId string
 @minLength(34)
 @maxLength(34)
+@secure()
 param AADClientSecret string
 param applicationIdUri string
 param functionStorageName string
