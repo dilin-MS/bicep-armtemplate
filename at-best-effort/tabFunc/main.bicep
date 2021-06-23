@@ -1,20 +1,11 @@
 targetScope = 'subscription'
-
-@minLength(3)
-@maxLength(16)
-param namePrefix string = 'dilintest'
-
+param namePrefix string
 param location string = deployment().location
-
-// Pass in AAD App information
-@minLength(36)
-@maxLength(36)
 param AADClientId string
-
-@minLength(34)
-@maxLength(34)
 @secure()
 param AADClientSecret string
+param allowedAadIds string
+param tenantId string
 
 resource myResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
   name: '${namePrefix}-rg'
@@ -30,15 +21,20 @@ module frontendHostingStorageDeploy 'frontend_hosting_storage.bicep' = {
 }
 
 var applicationIdUri = 'api://${frontendHostingStorageDeploy.outputs.domain}/${AADClientId}'
+var simpleAuthSiteConfigs = {
+  CLIENT_ID: AADClientId
+  CLIENT_SECRET: AADClientSecret
+  TAB_APP_ENDPOINT: frontendHostingStorageDeploy.outputs.endpoint
+  IDENTIFIER_URI: applicationIdUri
+  ALLOWED_APP_IDS: allowedAadIds
+}
+
 module simpleAuthWebAppDeploy 'simple_auth_webapp.bicep' = {
   name: 'simpleAuthWebAppDeploy'
   scope: myResourceGroup
   params: {
     simpleAuthPrefix: namePrefix
-    applicationIdUri: applicationIdUri
-    frontendHostingStorageEndpoint: frontendHostingStorageDeploy.outputs.endpoint
-    AADClientId: AADClientId
-    AADClientSecret: AADClientSecret
+    appSettingFromOtherModules: simpleAuthSiteConfigs
   }
 }
 
@@ -50,16 +46,33 @@ module functionStorageDeploy 'function_storage.bicep' = {
   }
 }
 
+var functionAppSiteConfigs = {
+  ALLOWED_APP_IDS: allowedAadIds
+  AzureWebJobsDashboard: functionStorageDeploy.outputs.storageConnectionString
+  AzureWebJobsStorage: functionStorageDeploy.outputs.storageConnectionString
+  WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: functionStorageDeploy.outputs.storageConnectionString
+  M365_APPLICATION_ID_URI: applicationIdUri
+  M365_CLIENT_ID: AADClientId
+  M365_CLIENT_SECRET: AADClientSecret
+  M365_TENANT_ID: tenantId
+}
+var functionAppAuthAllowedAudiences = [
+  AADClientId
+  applicationIdUri
+]
+var functionAppAllowedOrigins = [
+  frontendHostingStorageDeploy.outputs.endpoint
+]
 module functionAppDeploy 'function_app.bicep' = {
   name: 'functionAppDeploy'
   scope: myResourceGroup
   params: {
     functionPrefix: namePrefix
-    functionStorageName: functionStorageDeploy.outputs.storageAccountName
     AADClientId: AADClientId
-    AADClientSecret: AADClientSecret
-    applicationIdUri: applicationIdUri
-    frontendHostingStorageEndpoint: frontendHostingStorageDeploy.outputs.endpoint
+    tenantId: tenantId
+    functionAppSiteConfigsFromOtherModules: functionAppSiteConfigs
+    functionAppAuthAllowedAudiences: functionAppAuthAllowedAudiences
+    functionAppAllowedOrigins: functionAppAllowedOrigins
   }
 }
 

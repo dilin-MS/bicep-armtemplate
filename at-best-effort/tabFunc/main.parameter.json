@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "tenantId": {
+          "value": "72f988bf-86f1-41af-91ab-2d7cd011db47"
+      },
+      "AADClientId": {
+          "value": "40beaf37-3903-494d-92b8-3ecbf5d68546"
+      },
+      "AADClientSecret":{
+          "value": ""
+      },
+      "namePrefix": {
+          "value": "tabfunc0623"
+      },
+      "allowedAadIds": {
+        "value": "1fec8e78-bce4-4aaf-ab1b-5451cc387264;5e3ce6c0-2b1f-4285-8d4b-75ee78787346"
+      }
+    }
+  }
