@@ -1,7 +1,10 @@
 param functionPrefix string
 param functionServerfarmsName string = '${functionPrefix}-function-serverfarms'
 param functionAppName string = '${functionPrefix}-functionapp'
-param functionStorageName string = '${toLower(functionPrefix)}functionstg'
+@minLength(3)
+@maxLength(24)
+@description('Name of Storage Accounts for function backend.')
+param functionStorageName string = '${substring(toLower(functionPrefix), 0, 13)}functionstg'
 
 resource functionServerfarms 'Microsoft.Web/serverfarms@2020-06-01' = {
   name: functionServerfarmsName
