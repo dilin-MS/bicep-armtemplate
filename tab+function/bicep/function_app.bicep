@@ -1,33 +1,20 @@
-param frontendHostingStorageEndpoint string
 param functionPrefix string
-@minLength(36)
-@maxLength(36)
 param AADClientId string
-@minLength(34)
-@maxLength(34)
 @secure()
 param AADClientSecret string
+param functionServerfarmsName string = '${functionPrefix}-function-serverfarms'
+param functionAppName string = '${functionPrefix}-functionapp'
+param oauthAuthorityHost string = environment().authentication.loginEndpoint
+param tenantId string
+
+param frontendHostingStorageEndpoint string
 param applicationIdUri string
 param functionStorageName string
 
-@minLength(2)
-@description('Name of App Service Plan for function backend.')
-param functionServerfarmsName string = '${functionPrefix}-function-serverfarms'
-
-@minLength(2)
-@description('Function app name.')
-param functionAppName string = '${functionPrefix}-functionapp'
-
-@description('Microsoft oauth authority host')
-param oauthAuthorityHost string = environment().authentication.loginEndpoint
-
-@description('Tenant id.')
-param tenantId string = '72f988bf-86f1-41af-91ab-2d7cd011db47'
+var oauthAuthority = uri(oauthAuthorityHost, tenantId)
 
 @description('Allowed AAD ids.')
 param allowedAadIds string = '1fec8e78-bce4-4aaf-ab1b-5451cc387264;5e3ce6c0-2b1f-4285-8d4b-75ee78787346'
-
-var oauthAuthority = uri(oauthAuthorityHost, tenantId)
 
 resource functionServerfarms 'Microsoft.Web/serverfarms@2020-06-01' = {
   name: functionServerfarmsName

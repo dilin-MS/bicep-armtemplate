@@ -1,0 +1,15 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "AADClientId": {
+          "value": "40beaf37-3903-494d-92b8-3ecbf5d68546"
+      },
+      "AADClientSecret":{
+          "value": ""
+      },
+      "namePrefix": {
+          "value": "tabproject"
+      }
+    }
+  }

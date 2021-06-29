@@ -1,17 +1,7 @@
 targetScope = 'subscription'
-
-@minLength(3)
-@maxLength(16)
 param namePrefix string
 param location string = deployment().location
-
-// Pass in AAD App information
-@minLength(36)
-@maxLength(36)
 param AADClientId string
-
-@minLength(34)
-@maxLength(34)
 @secure()
 param AADClientSecret string
 
@@ -95,29 +85,21 @@ module identityDeploy 'identity.bicep' = {
   }
 }
 
-output frontendHostingConfig object = {
-  storageName: frontendHostingStorageDeploy.outputs.storageName
-  endpoint: frontendHostingStorageDeploy.outputs.endpoint
-  domain: frontendHostingStorageDeploy.outputs.domain
-}
-output simpleAuthConfig object = {
-  skuName: simpleAuthWebAppDeploy.outputs.skuName
-  endpoint: simpleAuthWebAppDeploy.outputs.endpoint
-}
+output frontendHosting_storageName string = frontendHostingStorageDeploy.outputs.storageName
+output frontendHosting_endpoint string = frontendHostingStorageDeploy.outputs.endpoint
+output frontendHosting_domain string = frontendHostingStorageDeploy.outputs.domain
 
-output functionConfig object = {
-  functionAppName: functionAppDeploy.outputs.functionAppName
-  storageAccountName: functionStorageDeploy.outputs.storageAccountName
-  appServicePlanName: functionAppDeploy.outputs.appServicePlanName
-  functionEndpoint: functionAppDeploy.outputs.functionEndpoint
-}
+output simpleAuth_skuName string = simpleAuthWebAppDeploy.outputs.skuName
+output simpleAuth_endpoint string = simpleAuthWebAppDeploy.outputs.endpoint
 
-output azureSqlConfig object = {
-  sqlEndpoint: azureSqlDeploy.outputs.sqlEndpoint
-  databaseName: azureSqlDeploy.outputs.databaseName
-}
-output identityConfig object = {
-  identityName: identityDeploy.outputs.identityName
-  identityId: identityDeploy.outputs.identityId
-  identity: identityDeploy.outputs.identity
-}
+output functionConfig_functionAppName string = functionAppDeploy.outputs.functionAppName
+output functionConfig_storageAccountName string = functionStorageDeploy.outputs.storageAccountName
+output functionConfig_appServicePlanName string = functionAppDeploy.outputs.appServicePlanName
+output functionConfig_functionEndpoint string = functionAppDeploy.outputs.functionEndpoint
+
+output azureSqlConfig_sqlEndpoint string =  azureSqlDeploy.outputs.sqlEndpoint
+output azureSqlConfig_databaseName string =  azureSqlDeploy.outputs.databaseName
+
+output identityConfig_identityName string =  identityDeploy.outputs.identityName
+output identityConfig_identityId string =  identityDeploy.outputs.identityId
+output identityConfig_identity string =  identityDeploy.outputs.identity

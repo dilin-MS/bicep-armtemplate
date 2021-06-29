@@ -2,12 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-      "AADUser": {
-        "value": "Di Lin"
-      },
-      "AADObjectId": {
-        "value": "d420b367-96bf-48a3-a6ec-4229cacf79ae"
-      },
       "tenantId": {
           "value": "72f988bf-86f1-41af-91ab-2d7cd011db47"
       },
@@ -18,13 +12,7 @@
           "value": ""
       },
       "namePrefix": {
-          "value": "tabFuncSql"
-      },
-      "sqlAdminLogin":{
-          "value": "dilin"
-      },
-      "sqlAdminLoginPassword":{
-          "value": ""
+          "value": "tabfunc0628"
       }
     }
   }
