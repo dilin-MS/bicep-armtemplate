@@ -1,13 +1,18 @@
+// Solution plugin provides
 targetScope = 'subscription'
 param namePrefix string
 param location string = deployment().location
+param tenantId string
+
+// aad_app plugin provides
 param AADClientId string
 @secure()
 param AADClientSecret string
 param allowedAadIds string
+
+// azure_sql plugin provides
 param AADUser string
 param AADObjectId string
-param tenantId string
 param sqlAdminLogin string
 @secure()
 param sqlAdminLoginPassword string
@@ -17,6 +22,55 @@ resource myResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
   location: location
 }
 
+solution: []
+AADClientId: "param namePrefix string"
+
+pluginA:AADClientId
+pluginB:AADClientId
+// Solution Plugin:
+// Knows: 
+//    plugins: [aad_app, frontend_hosting, function, simple_auth, azure_sql, identity]
+// Context passed to all plugins:
+//
+// {
+//   "aad_app": [
+//     AADClientId,
+//     AADClientSecret,
+//     tenantId,
+//     oAuthHost,
+//     oAuthAuhotiry,
+//     applicationIdUrl
+//   ],
+//   "frontend_hosting": [
+//     storageName
+//     endpoint
+//     domain
+//   ],
+//   "simple_auth": [
+//     skuName,
+//     endpoint
+//   ],
+//   "function": {
+//     "function_app": {
+//       functionAppName
+//       appServicePlanName
+//       functionEndpoint
+//     },
+//     "function_storage": {
+
+//     }
+//   },
+//   "azure_sql": {
+
+//   },
+//   "identity": {
+
+//   }
+//   }
+// }
+
+
+// frontend_hosting plugin provides
 module frontendHostingStorageDeploy 'frontend_hosting_storage.bicep' = {
   name: 'frontendHostingStorageDeploy'
   scope: myResourceGroup
@@ -25,7 +79,10 @@ module frontendHostingStorageDeploy 'frontend_hosting_storage.bicep' = {
   }
 }
 
+// aad_app plugin provides
 var applicationIdUri = 'api://${frontendHostingStorageDeploy.outputs.domain}/${AADClientId}'
+
+// simple_auth plugin provides
 var simpleAuthSiteConfigs = {
   CLIENT_ID: AADClientId
   CLIENT_SECRET: AADClientSecret

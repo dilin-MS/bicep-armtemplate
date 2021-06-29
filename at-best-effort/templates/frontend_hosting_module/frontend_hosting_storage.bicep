@@ -7,7 +7,7 @@ param storagePrefix string
 @minLength(3)
 @maxLength(24)
 @description('Name of Storage Accounts for frontend hosting.')
-param frontend_hosting_storage_name string = '${substring(toLower(storagePrefix), 0, 13)}frontendstg'
+param frontend_hosting_storage_name string = '${storagePrefix}frontend'
 
 param deploymentScriptTimestamp string = utcNow()
 param indexDocument string = 'index.html'

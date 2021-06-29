@@ -23,8 +23,6 @@ module frontendHostingStorageDeploy 'frontend_hosting_storage.bicep' = {
 var applicationIdUri = 'api://${frontendHostingStorageDeploy.outputs.domain}/${AADClientId}'
 
 var simpleAuthSiteConfigs = {
-  CLIENT_ID: AADClientId
-  CLIENT_SECRET: AADClientSecret
   TAB_APP_ENDPOINT: frontendHostingStorageDeploy.outputs.endpoint
   IDENTIFIER_URI: applicationIdUri
   ALLOWED_APP_IDS: allowedAadIds
@@ -35,6 +33,8 @@ module simpleAuthWebAppDeploy 'simple_auth_webapp.bicep' = {
   name: 'simpleAuthWebAppDeploy'
   scope: myResourceGroup
   params: {
+    AADClientId: AADClientId
+    AADClientSecret: AADClientSecret
     simpleAuthPrefix: namePrefix
     appSettingFromOtherModules: simpleAuthSiteConfigs
   }

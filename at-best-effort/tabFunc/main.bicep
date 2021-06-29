@@ -11,7 +11,6 @@ resource myResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
   name: '${namePrefix}-rg'
   location: location
 }
-
 module frontendHostingStorageDeploy 'frontend_hosting_storage.bicep' = {
   name: 'frontendHostingStorageDeploy'
   scope: myResourceGroup
@@ -28,7 +27,6 @@ var simpleAuthSiteConfigs = {
   IDENTIFIER_URI: applicationIdUri
   ALLOWED_APP_IDS: allowedAadIds
 }
-
 module simpleAuthWebAppDeploy 'simple_auth_webapp.bicep' = {
   name: 'simpleAuthWebAppDeploy'
   scope: myResourceGroup

@@ -11,14 +11,8 @@
       "tenantId": {
           "value": "72f988bf-86f1-41af-91ab-2d7cd011db47"
       },
-      "AADClientId": {
-          "value": "40beaf37-3903-494d-92b8-3ecbf5d68546"
-      },
-      "AADClientSecret":{
-          "value": ""
-      },
       "namePrefix": {
-          "value": "tabFuncSql"
+          "value": "dilindemo0629"
       },
       "sqlAdminLogin":{
           "value": "dilin"

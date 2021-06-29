@@ -1,9 +1,6 @@
 targetScope = 'subscription'
 param namePrefix string
 param location string = deployment().location
-param AADClientId string
-@secure()
-param AADClientSecret string
 
 param AADUser string
 param AADObjectId string
@@ -25,25 +22,12 @@ module frontendHostingDeploy 'frontend_hosting.bicep' = {
   }
 }
 
-var applicationIdUri = 'api://${frontendHostingDeploy.outputs.domain}/${AADClientId}'
 // simple auth plugin
 module simpleAuthDeploy 'simple_auth.bicep' = {
   name: 'simpleAuthWebAppDeploy'
   scope: myResourceGroup
   params: {
     simpleAuthPrefix: namePrefix
-  }
-}
-module simpleAuthConfigDeploy 'simple_auth_postconfig.bicep' = {
-  name: 'simpleAuthConfigDeploy'
-  scope: myResourceGroup
-  params: {
-    applicationIdUri: applicationIdUri
-    frontendHostingStorageEndpoint: frontendHostingDeploy.outputs.endpoint
-    AADClientId: AADClientId
-    AADClientSecret: AADClientSecret
-    simpleAuthWebAPPName: simpleAuthDeploy.outputs.webAppName
-    tenantId: tenantId
   }
 }
 
@@ -53,23 +37,6 @@ module functionDeploy 'function.bicep' = {
   scope: myResourceGroup
   params: {
     functionPrefix: namePrefix
-  }
-}
-module functionConfigDeploy 'function_postconfig.bicep' = {
-  name: 'functionConfigDeploy'
-  scope: myResourceGroup
-  params: {
-    AADClientId: AADClientId
-    AADClientSecret: AADClientSecret
-    tenantId: tenantId
-    applicationIdUri: applicationIdUri
-    frontendHostingStorageEndpoint: frontendHostingDeploy.outputs.endpoint
-    identityId: identityDeploy.outputs.identityId
-    sqlDatabaseName: azureSqlDeploy.outputs.databaseName
-    sqlEndpoint: azureSqlDeploy.outputs.sqlEndpoint
-    functionStorageName: functionDeploy.outputs.storageAccountName
-    functionAppEndpoint: functionDeploy.outputs.functionEndpoint
-    functionAppName: functionDeploy.outputs.functionAppName
   }
 }
 
@@ -97,9 +64,10 @@ module identityDeploy 'identity.bicep' = {
 }
 
 output frontendHosting_storageName string = frontendHostingDeploy.outputs.storageName
-output frontendHosting_endpoint string = frontendHostingDeploy.outputs.endpoint
-output frontendHosting_domain string = frontendHostingDeploy.outputs.domain
+// output frontendHosting_endpoint string = frontendHostingDeploy.outputs.endpoint
+// output frontendHosting_domain string = frontendHostingDeploy.outputs.domain
 
+output simpleAuth_webAppName string = simpleAuthDeploy.outputs.webAppName
 output simpleAuth_skuName string = simpleAuthDeploy.outputs.skuName
 output simpleAuth_endpoint string = simpleAuthDeploy.outputs.endpoint
 
@@ -114,3 +82,5 @@ output azureSql_databaseName string = azureSqlDeploy.outputs.databaseName
 output identity_identityName string = identityDeploy.outputs.identityName
 output identity_identityId string = identityDeploy.outputs.identityId
 output identity_identity string = identityDeploy.outputs.identity
+
+output resourceGroupName string = myResourceGroup.name

@@ -11,10 +11,6 @@ param simpleAuthServerFarmsName string = '${simpleAuthPrefix}-simple-auth-server
 @description('Simple auth web app name.')
 param simpleAuthWebAppName string = '${simpleAuthPrefix}-simple-auth-webapp'
 
-param AADClientId string
-@secure()
-param AADClientSecret string
-
 @description('Tenant id.')
 param tenantId string = '72f988bf-86f1-41af-91ab-2d7cd011db47'
 
@@ -29,6 +25,15 @@ var oauthAuthority = uri(oauthAuthorityHost, tenantId)
 
 param appSettingFromOtherModules object
 
+var teamsFxConfig = {
+  tlsVersion: 1
+  appSettings: [
+    {
+      name: 'xxx'
+      value: 'yyy'
+    }
+  ]
+}
 
 resource simpleAuthServerFarms 'Microsoft.Web/serverfarms@2020-06-01' = {
   name: simpleAuthServerFarmsName
@@ -62,8 +67,6 @@ resource simpleAuthSiteConfig 'Microsoft.Web/sites/config@2021-01-01' = {
   parent: simpleAuthWebApp
   name: 'appsettings'
   properties: union(appSettingFromOtherModules, {
-    CLIENT_ID: AADClientId
-    CLIENT_SECRET: AADClientSecret    
     AAD_METADATA_ADDRESS: aadMetadataAddress
     OAUTH_AUTHORITY: oauthAuthority
   })
