@@ -15,7 +15,7 @@
           "value": "dilindemo0629-rg"
       },
       "frontendHostingStorageEndpoint":{
-          "value": "tabfuncsql062frontendstg"
+          "value": "dilindemo0629frontendstg"
       },
       "simpleAuthWebAPPName":{
           "value": "dilindemo0629-simple-auth-webapp"
@@ -30,7 +30,7 @@
           "value": "dilindemo0629-sqlserver.database.windows.net"
       },
       "functionStorageName":{
-          "value": "tabfuncsql062functionstg"
+          "value": "dilindemo0629functionstg"
       },
       "functionAppEndpoint":{
           "value": "dilindemo0629-functionapp.azurewebsites.net"
