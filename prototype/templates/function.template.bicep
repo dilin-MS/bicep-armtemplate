@@ -4,7 +4,7 @@ param functionAppName string = '${functionPrefix}-functionapp'
 @minLength(3)
 @maxLength(24)
 @description('Name of Storage Accounts for function backend.')
-param functionStorageName string = '${substring(toLower(functionPrefix), 0, 13)}functionstg'
+param functionStorageName string = 'functionstg${uniqueString(resourceGroup().id)}'
 param AADClientId string
 @secure()
 param AADClientSecret string
@@ -47,6 +47,16 @@ resource functionApp 'Microsoft.Web/sites@2020-06-01' = {
   properties: {
     reserved: false
     serverFarmId: functionServerfarms.id
+    siteConfig: {
+      cors: {
+        allowedOrigins: [
+          frontendHostingStorageEndpoint
+        ]
+      }
+      alwaysOn: false
+      http20Enabled: false
+      numberOfWorkers: 1
+    }
   }
 }
 
@@ -109,21 +119,6 @@ resource functionAppAuthSettings 'Microsoft.Web/sites/config@2018-02-01' = {
       AADClientId
       applicationIdUri
     ]
-  }
-}
-
-resource functionAppSiteConfig 'Microsoft.Web/sites/config@2018-02-01' = {
-  parent: functionApp
-  name: 'web'
-  properties: {
-    cors: {
-      allowedOrigins: [
-        frontendHostingStorageEndpoint
-      ]
-    }
-    alwaysOn: false
-    http20Enabled: false
-    numberOfWorkers: 1
   }
 }
 

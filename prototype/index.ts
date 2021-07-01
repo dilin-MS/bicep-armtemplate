@@ -133,6 +133,8 @@ async function provisionArmBicepToAzure(bicepFilesDir: string): Promise<void> {
   await utils.executeCommand(
     `del ${armTemplateJsonFilePath} && bicep build ${mainFilePath} --outfile ${armTemplateJsonFilePath}`,
     async (stdout) => {
+      console.log("Successfully generate arm template json file main.json. Ready to deploy the arm template to Azure.");
+
       // Deploy ARM template to provision resources
       // todo: use credential with specific permission instead of using default azure credential
       const creds = new DefaultAzureCredential();

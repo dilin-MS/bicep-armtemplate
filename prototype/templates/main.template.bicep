@@ -51,9 +51,6 @@ resource myResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
 module frontendHostingDeploy 'frontend_hosting.bicep' = {
   name: 'frontendHostingDeploy'
   scope: myResourceGroup
-  params: {
-    storagePrefix: namePrefix
-  }
 }
 
 {{/if_equal}}

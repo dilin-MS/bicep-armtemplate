@@ -1,13 +1,7 @@
-// This template deploys an Azure Storage account, and then configures it to support static website hosting.
-// Enabling static website hosting isn't possible directly in Bicep or an ARM template,
-// so this file uses a deployment script to enable the feature.
-
-param storagePrefix string
-
 @minLength(3)
 @maxLength(24)
 @description('Name of Storage Accounts for frontend hosting.')
-param frontend_hosting_storage_name string = '${substring(toLower(storagePrefix), 0, 13)}frontendstg'
+param frontend_hosting_storage_name string = 'frontendstg${uniqueString(resourceGroup().id)}'
 
 resource frontendHostingStorage 'Microsoft.Storage/storageAccounts@2021-04-01' = {
   kind: 'StorageV2'
