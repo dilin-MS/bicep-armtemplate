@@ -10,7 +10,7 @@ param AADClientId string
 @secure()
 param AADClientSecret string
 {{/if_equal}}
-{{#if_equal this 'simple_aut'}}
+{{#if_equal this 'simple_auth'}}
 param simpleAuthWebAppSKU string
 {{/if_equal}}
 {{#if_equal this 'azure_sql'}}

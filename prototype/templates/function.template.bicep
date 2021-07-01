@@ -82,12 +82,12 @@ resource functionAppAppSettings 'Microsoft.Web/sites/config@2018-02-01' = {
   properties: {
     API_ENDPOINT: functionApp.properties.hostNames[0]
     ALLOWED_APP_IDS: teamsAadIds
-    AzureWebJobsDashboard: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageName};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', functionStorageName), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-    AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageName};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', functionStorageName), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-    WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageName};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', functionStorageName), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    AzureWebJobsDashboard: 'DefaultEndpointsProtocol=https;AccountName=${functionStorage.name};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', functionStorage.name), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${functionStorage.name};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', functionStorage.name), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: 'DefaultEndpointsProtocol=https;AccountName=${functionStorage.name};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', functionStorage.name), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
     WEBSITE_NODE_DEFAULT_VERSION: '~12'
     WEBSITE_RUN_FROM_PACKAGE: '1'
-    WEBSITE_CONTENTSHARE: functionAppName
+    WEBSITE_CONTENTSHARE: toLower(functionAppName)
     FUNCTIONS_EXTENSION_VERSION: '~3'
     FUNCTIONS_WORKER_RUNTIME: 'node'
     M365_APPLICATION_ID_URI: applicationIdUri
@@ -105,6 +105,9 @@ resource functionAppAppSettings 'Microsoft.Web/sites/config@2018-02-01' = {
     {{/if_equal}}
     {{/each}}
   }
+  dependsOn: [
+    functionStorage
+  ]
 }
 
 resource functionAppAuthSettings 'Microsoft.Web/sites/config@2018-02-01' = {
@@ -122,7 +125,6 @@ resource functionAppAuthSettings 'Microsoft.Web/sites/config@2018-02-01' = {
   }
 }
 
-output functionAppName string = functionApp.name
 output appServicePlanName string = functionServerfarms.name
 output functionEndpoint string = functionApp.properties.hostNames[0]
 output storageAccountName string = functionStorage.name

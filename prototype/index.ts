@@ -23,6 +23,7 @@ enum PluginTypes {
   FrontendHosting = "frontend_hosting",
   AzureSql = "azure_sql",
   Identity = "identity",
+  SimpleAuth = "simple_auth"
 }
 
 async function main() {
@@ -31,6 +32,7 @@ async function main() {
       PluginTypes.AAD,
       PluginTypes.FrontendHosting,
       PluginTypes.Function,
+      PluginTypes.SimpleAuth
     ],
   };
 
@@ -133,7 +135,7 @@ async function provisionArmBicepToAzure(bicepFilesDir: string): Promise<void> {
   await utils.executeCommand(
     `del ${armTemplateJsonFilePath} && bicep build ${mainFilePath} --outfile ${armTemplateJsonFilePath}`,
     async (stdout) => {
-      console.log("Successfully generate arm template json file main.json. Ready to deploy the arm template to Azure.");
+      console.log("Successfully generate arm template json file main.json. Prepare to deploy the arm template to Azure.");
 
       // Deploy ARM template to provision resources
       // todo: use credential with specific permission instead of using default azure credential
@@ -162,6 +164,7 @@ async function provisionArmBicepToAzure(bicepFilesDir: string): Promise<void> {
       ).catch(err => {
         console.log("Fail to deploy arm resources. Error message: " + err.message);
       });
+      console.log("Deployment finished.");
     }
   );
 }

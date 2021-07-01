@@ -8,9 +8,11 @@ param AADClientId string
 param AADClientSecret string
 param applicationIdUri string
 
-{{#with frontend_hosting}}
-{{input_param}}
-{{/with}}
+{{#each pluginTypes}}
+{{#if_equal this 'frontend_hosting'}}
+param frontendHostingStorageEndpoint string
+{{/if_equal}}
+{{/each}}
 
 var oauthAuthorityHost = environment().authentication.loginEndpoint
 var aadMetadataAddress = uri(oauthAuthorityHost, '${tenantId}/v2.0/.well-known/openid-configuration')
@@ -45,7 +47,8 @@ resource simpleAuthWebApp 'Microsoft.Web/sites@2020-06-01' = {
 }
 
 resource simpleAuthWebAppSettings 'Microsoft.Web/sites/config@2018-02-01' = {
-  name: '${simpleAuthWebAppName}/appsettings'
+  parent:simpleAuthWebApp
+  name: 'appsettings'
   properties: {
     AAD_METADATA_ADDRESS: aadMetadataAddress
     ALLOWED_APP_IDS: teamsAadIds
@@ -53,19 +56,11 @@ resource simpleAuthWebAppSettings 'Microsoft.Web/sites/config@2018-02-01' = {
     CLIENT_ID: AADClientId
     CLIENT_SECRET: AADClientSecret
     OAUTH_AUTHORITY: oauthAuthority
-    
-    {{#each functionAppSiteConfig_allowedOrigins}}
-    {{#ifIn plugin_name ../pluginTypes}}
-    {{#each values}}
-    {{value}}
+    {{#each pluginTypes}}
+    {{#if_equal this 'frontend_hosting'}}
+    TAB_APP_ENDPOINT: frontendHostingStorageEndpoint
+    {{/if_equal}}
     {{/each}}
-    {{/ifIn}}
-    {{/each}}
-    
-    {{#with frontend_hosting}}
-    {{simpleAuthWebAppSetting_property}}
-    {{/with}}
-    
   }  
 }
 
