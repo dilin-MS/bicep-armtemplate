@@ -24,5 +24,5 @@ resource frontendHostingStorage 'Microsoft.Storage/storageAccounts@2021-04-01' =
 }
 
 output storageName string = frontendHostingStorage.name
-// output endpoint string = frontendHostingStorage.properties.primaryEndpoints.web
-// output domain string = replace(replace(frontendHostingStorage.properties.primaryEndpoints.web, 'https://', ''), '/', '')
+output endpoint string = frontendHostingStorage.properties.primaryEndpoints.web
+output domain string = replace(replace(frontendHostingStorage.properties.primaryEndpoints.web, 'https://', ''), '/', '')
