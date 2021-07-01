@@ -17,8 +17,3 @@ export function createAADApp(): AADInfo {
 export function calculateApplicationIdUri(domain: string, clientId: string): string {
     return `api://${domain}/${clientId}`;
 }
-
-export function updateAADApp(aadApp: AADInfo, domain: string): void {
-    const applicationIdUri: string = calculateApplicationIdUri(domain, aadApp.clientId);
-    // update aad app with the applicationIdUri
-}
