@@ -1,7 +1,6 @@
-param simpleAuthPrefix string
 param sku string
-param simpleAuthServerFarmsName string = '${simpleAuthPrefix}-simple-auth-serverfarms'
-param simpleAuthWebAppName string = '${simpleAuthPrefix}-simple-auth-webapp'
+param simpleAuthServerFarmsName string
+param simpleAuthWebAppName string
 param tenantId string
 param AADClientId string
 @secure()

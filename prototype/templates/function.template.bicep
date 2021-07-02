@@ -1,10 +1,9 @@
-param functionPrefix string
-param functionServerfarmsName string = '${functionPrefix}-function-serverfarms'
-param functionAppName string = '${functionPrefix}-functionapp'
+param functionServerfarmsName string
+param functionAppName string
 @minLength(3)
 @maxLength(24)
 @description('Name of Storage Accounts for function backend.')
-param functionStorageName string = 'functionstg${uniqueString(resourceGroup().id)}'
+param functionStorageName string
 param AADClientId string
 @secure()
 param AADClientSecret string
@@ -26,7 +25,6 @@ param identityId string
 
 var oauthAuthorityHost = environment().authentication.loginEndpoint
 var teamsAadIds = '1fec8e78-bce4-4aaf-ab1b-5451cc387264;5e3ce6c0-2b1f-4285-8d4b-75ee78787346'
-
 
 resource functionServerfarms 'Microsoft.Web/serverfarms@2020-06-01' = {
   name: functionServerfarmsName

@@ -2,8 +2,16 @@ import * as AADPlugin from "./aad_plugin";
 import * as fs from "fs";
 import * as path from "path";
 import * as utils from "./utils";
-import { ResourceManagementClient } from "@azure/arm-resources";
+import {
+  ResourceManagementClient,
+  ResourceManagementModels,
+} from "@azure/arm-resources";
 import { DefaultAzureCredential } from "@azure/identity";
+import {
+  BlobServiceClient,
+  BlobServiceProperties,
+  StaticWebsite,
+} from "@azure/storage-blob";
 require("dotenv").config();
 
 const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID;
@@ -23,7 +31,7 @@ enum PluginTypes {
   FrontendHosting = "frontend_hosting",
   AzureSql = "azure_sql",
   Identity = "identity",
-  SimpleAuth = "simple_auth"
+  SimpleAuth = "simple_auth",
 }
 
 async function main() {
@@ -32,13 +40,17 @@ async function main() {
       PluginTypes.AAD,
       PluginTypes.FrontendHosting,
       PluginTypes.Function,
-      PluginTypes.SimpleAuth
+      PluginTypes.SimpleAuth,
     ],
   };
 
   await preProvision(pluginsContext);
-  await provisionArmBicepToAzure(bicepFilesDir);
-  await executeDataPlaneOperation();
+
+  const deploymentResult = await provisionArmBicepToAzure(bicepFilesDir);
+
+  const frontendHosting_connectionString =
+    deploymentResult.properties.outputs.frontendHosting_connectionString.value;
+  await executeDataPlaneOperation(frontendHosting_connectionString);
 }
 
 /**
@@ -93,11 +105,7 @@ async function preProvision(pluginsContext: any): Promise<void> {
   );
 
   // generate main.bicep
-  utils.generateBicepFiles(
-    mainTemplateFilePath,
-    mainFilePath,
-    pluginsContext
-  );
+  utils.generateBicepFiles(mainTemplateFilePath, mainFilePath, pluginsContext);
 }
 
 async function generateParameterFile(
@@ -109,7 +117,7 @@ async function generateParameterFile(
     TENANT_ID: process.env.TENANT_ID,
     CLIENT_ID: clientId,
     CLIENT_SECRET: clientSecret,
-    PROJECT_NAME: process.env.PROJECT_NAME,
+    RESOURCE_GROUP_NAME: process.env.RESOURCE_GROUP_NAME,
     SIMPLE_AUTH_SKU: process.env.SIMPLE_AUTH_SKU,
   };
 
@@ -125,48 +133,74 @@ async function generateParameterFile(
   );
 }
 
-async function executeDataPlaneOperation(): Promise<void> {
-  // todo
+async function executeDataPlaneOperation(
+  connectionString: string
+): Promise<void> {
+  const blobServiceClient = BlobServiceClient.fromConnectionString(
+    connectionString
+  );
+  const blbServiceProperties: BlobServiceProperties = {
+    staticWebsite: {
+      enabled: true,
+      indexDocument: "index.html",
+      errorDocument404Path: "index.html",
+    } as StaticWebsite,
+  };
+  blobServiceClient.setProperties(blbServiceProperties);
+  console.log(
+    `Successfully enable static website of ${blobServiceClient.accountName}.`
+  );
 }
 
-async function provisionArmBicepToAzure(bicepFilesDir: string): Promise<void> {
+async function provisionArmBicepToAzure(
+  bicepFilesDir: string
+): Promise<ResourceManagementModels.DeploymentsCreateOrUpdateResponse> {
   // Transform bicep file to json arm template file through Bicep CLI
   const armTemplateJsonFilePath: string = path.join(bicepFilesDir, "main.json");
   await utils.executeCommand(
-    `del ${armTemplateJsonFilePath} && bicep build ${mainFilePath} --outfile ${armTemplateJsonFilePath}`,
-    async (stdout) => {
-      console.log("Successfully generate arm template json file main.json. Prepare to deploy the arm template to Azure.");
-
-      // Deploy ARM template to provision resources
-      // todo: use credential with specific permission instead of using default azure credential
-      const creds = new DefaultAzureCredential();
-      const client = new ResourceManagementClient(creds, subscriptionId);
-
-      let template = JSON.parse(
-        fs.readFileSync(armTemplateJsonFilePath, "utf8")
-      );
-      let parameter = JSON.parse(
-        fs.readFileSync(parameterFilePath, "utf8")
-      );
-
-      type DeploymentMode = "Incremental" | "Complete";
-      let deploymentParameters = {
-        location: "eastus",
-        properties: {
-          parameters: parameter,
-          template: template,
-          mode: "Incremental" as DeploymentMode,
-        },
-      };
-      await client.deployments.createOrUpdateAtSubscriptionScope(
-        "dilindeploymentName",
-        deploymentParameters
-      ).catch(err => {
-        console.log("Fail to deploy arm resources. Error message: " + err.message);
-      });
-      console.log("Deployment finished.");
-    }
+    `del ${armTemplateJsonFilePath} && bicep build ${mainFilePath} --outfile ${armTemplateJsonFilePath}`
   );
+  console.log(
+    `Successfully generate arm template json file ${armTemplateJsonFilePath}. Prepare to deploy the arm template to Azure.`
+  );
+
+  // Deploy ARM template to provision resources
+  const creds = new DefaultAzureCredential();
+  const client = new ResourceManagementClient(creds, subscriptionId);
+
+  let template = JSON.parse(fs.readFileSync(armTemplateJsonFilePath, "utf8"));
+  let parameter = JSON.parse(fs.readFileSync(parameterFilePath, "utf8"));
+
+  type DeploymentMode = "Incremental" | "Complete";
+  let deploymentParameters = {
+    properties: {
+      parameters: parameter,
+      template: template,
+      mode: "Incremental" as DeploymentMode,
+    },
+  };
+  const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
+  if (!resourceGroupName) {
+    throw new Error(
+      "RESOURCE_GROUP_NAME not found in environment. Please add RESOURCE_GROUP_NAME='myExistingResourceName' in .env file and try again"
+    );
+  }
+  const deploymentName = "TeamsFxToolkitDeployment";
+  try {
+    const result = await client.deployments.createOrUpdate(
+      resourceGroupName,
+      deploymentName,
+      deploymentParameters
+    );
+    console.log(
+      `Successfully deploy arm template to resource group ${resourceGroupName}.`
+    );
+    return result;
+  } catch (err) {
+    console.log(
+      `Fail to deploy arm template to resource group ${resourceGroupName}. Error message: ${err.message}`
+    );
+  }
 }
 
 main().catch((err) => {

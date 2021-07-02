@@ -1,6 +1,6 @@
 {
-  "namePrefix": {
-      "value": "{{PROJECT_NAME}}"
+  "resourceGroupName": {
+      "value": "{{RESOURCE_GROUP_NAME}}"
   },
   "tenantId": {
       "value": "{{TENANT_ID}}"
@@ -15,7 +15,7 @@
   }
   {{/if_equal}}
   {{#if_equal this 'simple_auth'}} 
-  ,"simpleAuthWebAppSKU":{
+  ,"simpleAuth_sku":{
       "value": "{{../SIMPLE_AUTH_SKU}}"
   }
   {{/if_equal}}

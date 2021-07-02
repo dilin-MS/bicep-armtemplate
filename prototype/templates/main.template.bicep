@@ -1,6 +1,5 @@
-targetScope = 'subscription'
-param namePrefix string
-param location string = deployment().location
+targetScope = 'resourceGroup'
+param resourceGroupName string
 param tenantId string
 
 // input params
@@ -10,8 +9,24 @@ param AADClientId string
 @secure()
 param AADClientSecret string
 {{/if_equal}}
+{{#if_equal this 'frontend_hosting'}}
+@minLength(3)
+@maxLength(24)
+@description('Name of Storage Accounts for frontend hosting.')
+param frontendHosting_storageName string = 'frontendstg${uniqueString(resourceGroupName)}'
+{{/if_equal}}
+{{#if_equal this 'function'}}
+param function_serverfarmsName string = '${resourceGroupName}-function-serverfarms'
+param function_webappName string = '${resourceGroupName}-function-webapp'
+@minLength(3)
+@maxLength(24)
+@description('Name of Storage Accounts for function backend.')
+param function_storageName string = 'functionstg${uniqueString(resourceGroupName)}'
+{{/if_equal}}
 {{#if_equal this 'simple_auth'}}
-param simpleAuthWebAppSKU string
+param simpleAuth_sku string
+param simpleAuth_serverFarmsName string = '${resourceGroupName}-simpleAuth-serverfarms'
+param simpleAuth_webAppName string = '${resourceGroupName}-simpleAuth-webapp'
 {{/if_equal}}
 {{#if_equal this 'azure_sql'}}
 param AADUser string
@@ -41,26 +56,23 @@ var applicationIdUri = 'api://${botDeploy.outputs.domain}/botid-${AADClientId}'
 {{/each}}
 
 // resources and modules
-resource myResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
-  name: '${namePrefix}-rg'
-  location: location
-}
-
 {{#each pluginTypes}}
 {{#if_equal this 'frontend_hosting'}}
 module frontendHostingDeploy 'frontend_hosting.bicep' = {
   name: 'frontendHostingDeploy'
-  scope: myResourceGroup
+  params: {
+    frontend_hosting_storage_name: frontendHosting_storageName
+  }
 }
 
 {{/if_equal}}
 {{#if_equal this 'simple_auth'}}
 module simpleAuthDeploy 'simple_auth.bicep' = {
   name: 'simpleAuthWebAppDeploy'
-  scope: myResourceGroup
   params: {
-    simpleAuthPrefix: namePrefix
-    sku: simpleAuthWebAppSKU
+    simpleAuthServerFarmsName: simpleAuth_serverFarmsName
+    simpleAuthWebAppName: simpleAuth_webAppName
+    sku: simpleAuth_sku
     AADClientId: AADClientId
     AADClientSecret: AADClientSecret
     applicationIdUri: applicationIdUri
@@ -73,9 +85,10 @@ module simpleAuthDeploy 'simple_auth.bicep' = {
 {{#if_equal this 'function'}}
 module functionDeploy 'function.bicep' = {
   name: 'functionDeploy'
-  scope: myResourceGroup
   params: {
-    functionPrefix: namePrefix
+    functionAppName: function_webappName
+    functionServerfarmsName: function_serverfarmsName
+    functionStorageName: function_storageName
     AADClientId: AADClientId
     AADClientSecret: AADClientSecret
     tenantId: tenantId
@@ -88,9 +101,8 @@ module functionDeploy 'function.bicep' = {
 {{#if_equal this 'azure_sql'}}
 module azureSqlDeploy 'azure_sql.bicep' = {
   name: 'azureSqlDeploy'
-  scope: myResourceGroup
   params: {
-    sqlPrefix: namePrefix
+    sqlresourceGroupName: nameresourceGroupName
     AADUser: AADUser
     AADObjectId: AADObjectId
     AADTenantId: tenantId
@@ -103,9 +115,8 @@ module azureSqlDeploy 'azure_sql.bicep' = {
 {{#if_equal this 'identity'}}
 module identityDeploy 'identity.bicep' = {
   name: 'identityDeploy'
-  scope: myResourceGroup
   params: {
-     namePrefix: namePrefix
+     nameresourceGroupName: nameresourceGroupName
   }
 }
 
@@ -115,6 +126,7 @@ module identityDeploy 'identity.bicep' = {
 // output
 {{#each pluginTypes}}
 {{#if_equal this 'frontend_hosting'}}
+output frontendHosting_connectionString string = frontendHostingDeploy.outputs.connectionString
 output frontendHosting_storageName string = frontendHostingDeploy.outputs.storageName
 output frontendHosting_endpoint string = frontendHostingDeploy.outputs.endpoint
 output frontendHosting_domain string = frontendHostingDeploy.outputs.domain
@@ -126,20 +138,20 @@ output simpleAuth_endpoint string = simpleAuthDeploy.outputs.endpoint
 
 {{/if_equal}}
 {{#if_equal this 'function'}}
-output functionConfig_storageAccountName string = functionDeploy.outputs.storageAccountName
-output functionConfig_appServicePlanName string = functionDeploy.outputs.appServicePlanName
-output functionConfig_functionEndpoint string = functionDeploy.outputs.functionEndpoint
+output function_storageAccountName string = functionDeploy.outputs.storageAccountName
+output function_appServicePlanName string = functionDeploy.outputs.appServicePlanName
+output function_functionEndpoint string = functionDeploy.outputs.functionEndpoint
 
 {{/if_equal}}
 {{#if_equal this 'azure_sql'}}
-output azureSqlConfig_sqlEndpoint string =  azureSqlDeploy.outputs.sqlEndpoint
-output azureSqlConfig_databaseName string =  azureSqlDeploy.outputs.databaseName
+output azureSql_sqlEndpoint string =  azureSqlDeploy.outputs.sqlEndpoint
+output azureSql_databaseName string =  azureSqlDeploy.outputs.databaseName
 
 {{/if_equal}}
 {{#if_equal this 'identity'}}
-output identityConfig_identityName string =  identityDeploy.outputs.identityName
-output identityConfig_identityId string =  identityDeploy.outputs.identityId
-output identityConfig_identity string =  identityDeploy.outputs.identity
+output identity_identityName string =  identityDeploy.outputs.identityName
+output identity_identityId string =  identityDeploy.outputs.identityId
+output identity_identity string =  identityDeploy.outputs.identity
 
 {{/if_equal}}
 {{/each}}

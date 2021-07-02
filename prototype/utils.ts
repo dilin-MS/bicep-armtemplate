@@ -1,6 +1,7 @@
-const { exec } = require("child_process");
 import * as Handlebars from "handlebars";
 import * as fs from "fs";
+import * as util from "util";
+const exec = util.promisify(require("child_process").exec);
 
 Handlebars.registerHelper('if_equal', function(conditional, value, options) {
   if (conditional === value){
@@ -25,15 +26,11 @@ Handlebars.registerHelper('ifNotIn', function(elem, list, options) {
 });
 
 
-export async function executeCommand(command: string, callback): Promise<void> {
+export async function executeCommand(command: string): Promise<any> {
   console.log(`Executing command: ${command}`);
 
-  await exec(command, (err, stdout, stderr) => {
-    if (err) {
-      throw err;
-    }
-    callback(stdout);
-  });
+  const {stdout, stderr} = await exec(command);
+  return stdout;
 }
 
 export async function generateBicepFiles(
