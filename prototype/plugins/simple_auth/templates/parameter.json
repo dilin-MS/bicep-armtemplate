@@ -1,0 +1,5 @@
+{
+  "simpleAuth_sku": {
+    "value": "{{SIMPLE_AUTH_SKU}}"
+  }
+}

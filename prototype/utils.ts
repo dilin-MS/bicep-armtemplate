@@ -33,18 +33,17 @@ export async function executeCommand(command: string): Promise<any> {
   return stdout;
 }
 
-export async function generateBicepFiles(
+export function generateBicepFiles(
   templateFilePath: string,
-  destFilePath: string,
   pluginsContext: any
-): Promise<void> {
+): string {
   const templateString = fs.readFileSync(templateFilePath, "utf8");
   let template = Handlebars.compile(templateString);
 
   let updatedBicepFile = template(pluginsContext);
-  fs.writeFileSync(destFilePath, updatedBicepFile);
+  // console.log(`Successfully updated bicep file: ${templateFilePath}`);
 
-  console.log(`Successfully generate ${destFilePath}`);
+  return updatedBicepFile;
 }
 
 export function ensureDirectoryExists(directory: string): void {

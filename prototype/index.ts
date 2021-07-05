@@ -1,7 +1,11 @@
-import * as AADPlugin from "./aad_plugin";
 import * as fs from "fs";
 import * as path from "path";
 import * as utils from "./utils";
+import { PluginTypes, PluginBicepSnippet } from "./api";
+import * as AADPlugin from "./plugins/aad/aad_plugin";
+import * as FrontendHostingPlugin from "./plugins/frontend_hosting/frontend_hosting_plugin";
+import * as FunctionPlugin from "./plugins/function/function_plugin";
+import * as SimpleAuthPlugin from "./plugins/simple_auth/simple_auth_plugin";
 import {
   ResourceManagementClient,
   ResourceManagementModels,
@@ -22,96 +26,136 @@ const parameterTemplateFilePath = path.join(
   "main.parameter.template.json"
 );
 const parameterFilePath = path.join(bicepFilesDir, "main.parameter.json");
-const mainTemplateFilePath = path.join(templateDir, "main.template.bicep");
 const mainFilePath = path.join(bicepFilesDir, "main.bicep");
 
-enum PluginTypes {
-  AAD = "aad_app",
-  Function = "function",
-  FrontendHosting = "frontend_hosting",
-  AzureSql = "azure_sql",
-  Identity = "identity",
-  SimpleAuth = "simple_auth",
-}
-
+/**
+ * This Main function prototypes what solution plugin does.
+ */
 async function main() {
-  const pluginsContext = {
-    pluginTypes: [
-      PluginTypes.AAD,
-      PluginTypes.FrontendHosting,
-      PluginTypes.Function,
-      PluginTypes.SimpleAuth,
-    ],
-  };
+  const pluginTypes = [
+    PluginTypes.AAD,
+    PluginTypes.FrontendHosting,
+    PluginTypes.Function,
+    PluginTypes.SimpleAuth,
+  ];
+  await generateBicepFiles(pluginTypes);
 
-  await preProvision(pluginsContext);
-
-  const deploymentResult = await provisionArmBicepToAzure(bicepFilesDir);
+  const deploymentResult = await deployArmTemplateToAzure(bicepFilesDir);
 
   const frontendHosting_connectionString =
     deploymentResult.properties.outputs.frontendHosting_connectionString.value;
-  await executeDataPlaneOperation(frontendHosting_connectionString);
+  executeDataPlaneOperation(frontendHosting_connectionString);
 }
 
 /**
  * Create AAD App Registration and get clientId, clientSecret
  */
-async function preProvision(pluginsContext: any): Promise<void> {
+async function generateBicepFiles(pluginTypes: PluginTypes[]): Promise<void> {
   utils.ensureDirectoryExists(bicepFilesDir);
 
   // Create AAD App
   const aadInfo: AADPlugin.AADInfo = AADPlugin.createAADApp();
 
-  // generate main.parameter.json
-  generateParameterFile(aadInfo.clientId, aadInfo.clientSecret, pluginsContext);
+  let codeSnippets: PluginBicepSnippet[] = [];
+  const context = {
+    pluginTypes: pluginTypes,
+  };
+  for (const plugin of pluginTypes) {
+    switch (plugin) {
+      case PluginTypes.AAD:
+        codeSnippets.push(AADPlugin.generateBicepFile(context));
+        break;
+      case PluginTypes.FrontendHosting:
+        codeSnippets.push(FrontendHostingPlugin.generateBicepFile());
+        break;
+      case PluginTypes.Function:
+        codeSnippets.push(FunctionPlugin.generateBicepFile(context));
+        break;
+      case PluginTypes.SimpleAuth:
+        codeSnippets.push(SimpleAuthPlugin.generateBicepFile(context));
+        break;
+      default:
+    }
+  }
 
-  // generate frontend hosting update bicep files
-  const frontendHostingTemplateFilePath = path.join(
-    templateDir,
-    "frontend_hosting.template.bicep"
-  );
-  const frontendHostingDestFilePath = path.join(
-    bicepFilesDir,
-    "frontend_hosting.bicep"
-  );
-  utils.generateBicepFiles(
-    frontendHostingTemplateFilePath,
-    frontendHostingDestFilePath,
-    pluginsContext
-  );
+  // plugin resources
+  codeSnippets.forEach((pluginSnippet) => {
+    if (pluginSnippet.PluginResources) {
+      const pluginResourceDestFilePath = path.join(
+        bicepFilesDir,
+        `${pluginSnippet.PluginTypes}.bicep`
+      );
+      fs.writeFileSync(
+        pluginResourceDestFilePath,
+        pluginSnippet.PluginResources
+      );
+      console.log(
+        `Successfully generate resource bicep file: ${pluginResourceDestFilePath}`
+      );
+    }
+  });
 
-  // generate function update bicep files
-  const functionTemplateFilePath = path.join(
-    templateDir,
-    "function.template.bicep"
-  );
-  const functionDestFilePath = path.join(bicepFilesDir, "function.bicep");
-  utils.generateBicepFiles(
-    functionTemplateFilePath,
-    functionDestFilePath,
-    pluginsContext
-  );
+  // main.bicep
+  const mainTemplateFilePath = path.join(templateDir, "main.template.bicep");
+  let mainTemplate = fs.readFileSync(mainTemplateFilePath, "utf8");
+  for (const pluginSnippet of codeSnippets) {
+    if (pluginSnippet.MainInputParams) {
+      mainTemplate += pluginSnippet.MainInputParams;
+    }
+  }
+  for (const pluginSnippet of codeSnippets) {
+    if (pluginSnippet.MainVars) {
+      mainTemplate += pluginSnippet.MainVars;
+    }
+  }
+  for (const pluginSnippet of codeSnippets) {
+    if (pluginSnippet.MainModules) {
+      mainTemplate += pluginSnippet.MainModules;
+    }
+  }
+  for (const pluginSnippet of codeSnippets) {
+    if (pluginSnippet.MainOutput) {
+      mainTemplate += pluginSnippet.MainOutput;
+    }
+  }
+  const mainFilePath = path.join(bicepFilesDir, `main.bicep`);
+  fs.writeFileSync(mainFilePath, mainTemplate);
 
-  // generate simple auth bicep files
-  const simpleAuthTemplateFilePath = path.join(
-    templateDir,
-    "function.template.bicep"
-  );
-  const simpleAuthDestFilePath = path.join(bicepFilesDir, "function.bicep");
-  utils.generateBicepFiles(
-    simpleAuthTemplateFilePath,
-    simpleAuthDestFilePath,
-    pluginsContext
-  );
+  // parameter.json
+  let parameterString = fs.readFileSync(parameterTemplateFilePath, "utf8");
+  let parameters = JSON.parse(parameterString);
+  for (const pluginSnippet of codeSnippets) {
+    if (pluginSnippet.Parameter) {
+      parameters = {
+        ...parameters,
+        ...pluginSnippet.Parameter,
+      };
+    }
+  }
+  fs.writeFileSync(parameterFilePath, JSON.stringify(parameters));
 
-  // generate main.bicep
-  utils.generateBicepFiles(mainTemplateFilePath, mainFilePath, pluginsContext);
+  updateEnvParameterValues(aadInfo.clientId, aadInfo.clientSecret);
+
+  updateModuleNames(mainFilePath);
 }
 
-async function generateParameterFile(
+function updateModuleNames(filePath: string) {
+  const moduleNames = {
+    __simpleAuthDeploy__: "simpleAuthDeploy",
+    __functionDeploy__: "functionDeploy",
+    __frontendHostingDeploy__: "frontendHostingDeploy",
+  };
+  let fileString = fs.readFileSync(filePath, 'utf8');
+  for (let key in moduleNames) {
+    let value = moduleNames[key];
+    fileString = fileString.replace(new RegExp(key, 'g'), value);
+  }
+  fs.writeFileSync(filePath, fileString);
+}
+
+function updateEnvParameterValues(
   clientId: string,
   clientSecret: string,
-  pluginsContext: any
 ) {
   const aad_context = {
     TENANT_ID: process.env.TENANT_ID,
@@ -121,21 +165,13 @@ async function generateParameterFile(
     SIMPLE_AUTH_SKU: process.env.SIMPLE_AUTH_SKU,
   };
 
-  const context = {
-    ...pluginsContext,
-    ...aad_context,
-  };
-
-  utils.generateBicepFiles(
-    parameterTemplateFilePath,
-    parameterFilePath,
-    context
-  );
+  const parameters = utils.generateBicepFiles(parameterFilePath, aad_context);
+  fs.writeFileSync(parameterFilePath, parameters);
 }
 
-async function executeDataPlaneOperation(
+function executeDataPlaneOperation(
   connectionString: string
-): Promise<void> {
+): void {
   const blobServiceClient = BlobServiceClient.fromConnectionString(
     connectionString
   );
@@ -152,7 +188,7 @@ async function executeDataPlaneOperation(
   );
 }
 
-async function provisionArmBicepToAzure(
+async function deployArmTemplateToAzure(
   bicepFilesDir: string
 ): Promise<ResourceManagementModels.DeploymentsCreateOrUpdateResponse> {
   // Transform bicep file to json arm template file through Bicep CLI
