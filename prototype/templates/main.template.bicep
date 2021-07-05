@@ -33,6 +33,11 @@ param AADUser string
 param AADObjectId string
 param sqlAdminLogin string
 param sqlAdminLoginPassword string
+param sqlServerName string = '${resourceGroupName}-sql-server'
+param sqlDatabaseName string = '${resourceGroupName}-database'
+{{/if_equal}}
+{{#if_equal this 'azure_sql'}}
+param managedIdentityName string = '${resourceGroupName}-managedIdentity'
 {{/if_equal}}
 {{/each}}
 
@@ -102,7 +107,8 @@ module functionDeploy 'function.bicep' = {
 module azureSqlDeploy 'azure_sql.bicep' = {
   name: 'azureSqlDeploy'
   params: {
-    sqlresourceGroupName: nameresourceGroupName
+    sqlServerName: sqlServerName
+    sqlDatabaseName: sqlDatabaseName
     AADUser: AADUser
     AADObjectId: AADObjectId
     AADTenantId: tenantId
@@ -116,7 +122,7 @@ module azureSqlDeploy 'azure_sql.bicep' = {
 module identityDeploy 'identity.bicep' = {
   name: 'identityDeploy'
   params: {
-     nameresourceGroupName: nameresourceGroupName
+    managedIdentityName: managedIdentityName
   }
 }
 
@@ -144,14 +150,14 @@ output function_functionEndpoint string = functionDeploy.outputs.functionEndpoin
 
 {{/if_equal}}
 {{#if_equal this 'azure_sql'}}
-output azureSql_sqlEndpoint string =  azureSqlDeploy.outputs.sqlEndpoint
-output azureSql_databaseName string =  azureSqlDeploy.outputs.databaseName
+output azureSql_sqlEndpoint string = azureSqlDeploy.outputs.sqlEndpoint
+output azureSql_databaseName string = azureSqlDeploy.outputs.databaseName
 
 {{/if_equal}}
 {{#if_equal this 'identity'}}
-output identity_identityName string =  identityDeploy.outputs.identityName
-output identity_identityId string =  identityDeploy.outputs.identityId
-output identity_identity string =  identityDeploy.outputs.identity
+output identity_identityName string = identityDeploy.outputs.identityName
+output identity_identityId string = identityDeploy.outputs.identityId
+output identity_identity string = identityDeploy.outputs.identity
 
 {{/if_equal}}
 {{/each}}
