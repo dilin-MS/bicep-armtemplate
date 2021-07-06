@@ -1,5 +1,5 @@
 
-module azureSqlDeploy 'azure_sql.bicep' = {
+module __azureSqlDeploy__ '__azureSqlFilePath__' = {
   name: 'azureSqlDeploy'
   params: {
     sqlServerName: sqlServerName

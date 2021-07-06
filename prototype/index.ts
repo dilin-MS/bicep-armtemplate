@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as Handlebars from "handlebars";
 import * as utils from "./utils";
-import { PluginTypes, PluginBicepSnippet } from "./api";
+import { PluginTypes, PluginBicepSnippet } from "./models";
 import * as AADPlugin from "./plugins/aad/aad_plugin";
 import * as FrontendHostingPlugin from "./plugins/frontend_hosting/frontend_hosting_plugin";
 import * as FunctionPlugin from "./plugins/function/function_plugin";
@@ -21,12 +22,8 @@ require("dotenv").config();
 const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID;
 const templateDir = path.join(__dirname, "..", "templates");
 const bicepFilesDir = path.join(__dirname, "..", "bicep");
-const parameterTemplateFilePath = path.join(
-  templateDir,
-  "main.parameter.template.json"
-);
-const parameterFilePath = path.join(bicepFilesDir, "main.parameter.json");
 const mainFilePath = path.join(bicepFilesDir, "main.bicep");
+const creds = new DefaultAzureCredential();
 
 /**
  * This Main function prototypes what solution plugin does.
@@ -38,19 +35,22 @@ async function main() {
     PluginTypes.Function,
     PluginTypes.SimpleAuth,
   ];
-  await generateBicepFiles(pluginTypes);
+  const parameterString = generateBicepFiles(pluginTypes);
 
-  const deploymentResult = await deployArmTemplateToAzure(bicepFilesDir);
+  const deploymentResult = await deployArmTemplateToAzure(
+    bicepFilesDir,
+    parameterString
+  );
 
-  const frontendHosting_connectionString =
-    deploymentResult.properties.outputs.frontendHosting_connectionString.value;
-  executeDataPlaneOperation(frontendHosting_connectionString);
+  const frontendHosting_storageName =
+    deploymentResult.properties.outputs.frontendHosting_storageName.value;
+  executeDataPlaneOperation(frontendHosting_storageName);
 }
 
 /**
  * Create AAD App Registration and get clientId, clientSecret
  */
-async function generateBicepFiles(pluginTypes: PluginTypes[]): Promise<void> {
+function generateBicepFiles(pluginTypes: PluginTypes[]): string {
   utils.ensureDirectoryExists(bicepFilesDir);
 
   // Create AAD App
@@ -96,6 +96,18 @@ async function generateBicepFiles(pluginTypes: PluginTypes[]): Promise<void> {
   });
 
   // main.bicep
+  generateMainBicepFile(codeSnippets);
+
+  // parameter.json
+  const parameterString: string = getParameters(
+    codeSnippets,
+    aadInfo.clientId,
+    aadInfo.clientSecret
+  );
+  return parameterString;
+}
+
+function generateMainBicepFile(codeSnippets: PluginBicepSnippet[]) {
   const mainTemplateFilePath = path.join(templateDir, "main.template.bicep");
   let mainTemplate = fs.readFileSync(mainTemplateFilePath, "utf8");
   for (const pluginSnippet of codeSnippets) {
@@ -118,10 +130,36 @@ async function generateBicepFiles(pluginTypes: PluginTypes[]): Promise<void> {
       mainTemplate += pluginSnippet.MainOutput;
     }
   }
-  const mainFilePath = path.join(bicepFilesDir, `main.bicep`);
-  fs.writeFileSync(mainFilePath, mainTemplate);
 
-  // parameter.json
+  // solution plugin can customize each module's name and file path
+  const moduleNames = {
+    __simpleAuthDeploy__: "simpleAuthDeploy",
+    __functionDeploy__: "functionDeploy",
+    __frontendHostingDeploy__: "frontendHostingDeploy",
+    __azureSqlDeploy__: "azureSqlDeploy",
+    __identityDeploy__: "identityDeploy",
+    __frontendHostingFilePath__: `${PluginTypes.FrontendHosting}.bicep`,
+    __azureSqlFilePath__: `${PluginTypes.AzureSql}.bicep`,
+    __functionFilePath__: `${PluginTypes.Function}.bicep`,
+    __identityFilePath__: `${PluginTypes.Identity}.bicep`,
+    __simpleAuthFilePath__: `${PluginTypes.SimpleAuth}.bicep`,
+  };
+  for (let key in moduleNames) {
+    let value = moduleNames[key];
+    mainTemplate = mainTemplate.replace(new RegExp(key, "g"), value);
+  }
+  fs.writeFileSync(mainFilePath, mainTemplate);
+}
+
+function getParameters(
+  codeSnippets: PluginBicepSnippet[],
+  clientId: string,
+  clientSecret: string
+): string {
+  const parameterTemplateFilePath = path.join(
+    templateDir,
+    "main.parameter.template.json"
+  );
   let parameterString = fs.readFileSync(parameterTemplateFilePath, "utf8");
   let parameters = JSON.parse(parameterString);
   for (const pluginSnippet of codeSnippets) {
@@ -132,31 +170,6 @@ async function generateBicepFiles(pluginTypes: PluginTypes[]): Promise<void> {
       };
     }
   }
-  fs.writeFileSync(parameterFilePath, JSON.stringify(parameters));
-
-  updateEnvParameterValues(aadInfo.clientId, aadInfo.clientSecret);
-
-  updateModuleNames(mainFilePath);
-}
-
-function updateModuleNames(filePath: string) {
-  const moduleNames = {
-    __simpleAuthDeploy__: "simpleAuthDeploy",
-    __functionDeploy__: "functionDeploy",
-    __frontendHostingDeploy__: "frontendHostingDeploy",
-  };
-  let fileString = fs.readFileSync(filePath, 'utf8');
-  for (let key in moduleNames) {
-    let value = moduleNames[key];
-    fileString = fileString.replace(new RegExp(key, 'g'), value);
-  }
-  fs.writeFileSync(filePath, fileString);
-}
-
-function updateEnvParameterValues(
-  clientId: string,
-  clientSecret: string,
-) {
   const aad_context = {
     TENANT_ID: process.env.TENANT_ID,
     CLIENT_ID: clientId,
@@ -164,17 +177,13 @@ function updateEnvParameterValues(
     RESOURCE_GROUP_NAME: process.env.RESOURCE_GROUP_NAME,
     SIMPLE_AUTH_SKU: process.env.SIMPLE_AUTH_SKU,
   };
-
-  const parameters = utils.generateBicepFiles(parameterFilePath, aad_context);
-  fs.writeFileSync(parameterFilePath, parameters);
+  let template = Handlebars.compile(JSON.stringify(parameters));
+  let updatedParameters = template(aad_context);
+  return updatedParameters;
 }
 
-function executeDataPlaneOperation(
-  connectionString: string
-): void {
-  const blobServiceClient = BlobServiceClient.fromConnectionString(
-    connectionString
-  );
+function executeDataPlaneOperation(storageName: string): void {
+  const blobServiceClient = new BlobServiceClient(`https://${storageName}.blob.core.windows.net`, creds);
   const blbServiceProperties: BlobServiceProperties = {
     staticWebsite: {
       enabled: true,
@@ -189,7 +198,8 @@ function executeDataPlaneOperation(
 }
 
 async function deployArmTemplateToAzure(
-  bicepFilesDir: string
+  bicepFilesDir: string,
+  parameterString: string
 ): Promise<ResourceManagementModels.DeploymentsCreateOrUpdateResponse> {
   // Transform bicep file to json arm template file through Bicep CLI
   const armTemplateJsonFilePath: string = path.join(bicepFilesDir, "main.json");
@@ -201,16 +211,14 @@ async function deployArmTemplateToAzure(
   );
 
   // Deploy ARM template to provision resources
-  const creds = new DefaultAzureCredential();
   const client = new ResourceManagementClient(creds, subscriptionId);
 
   let template = JSON.parse(fs.readFileSync(armTemplateJsonFilePath, "utf8"));
-  let parameter = JSON.parse(fs.readFileSync(parameterFilePath, "utf8"));
 
   type DeploymentMode = "Incremental" | "Complete";
   let deploymentParameters = {
     properties: {
-      parameters: parameter,
+      parameters: JSON.parse(parameterString),
       template: template,
       mode: "Incremental" as DeploymentMode,
     },
@@ -218,7 +226,7 @@ async function deployArmTemplateToAzure(
   const resourceGroupName = process.env.RESOURCE_GROUP_NAME;
   if (!resourceGroupName) {
     throw new Error(
-      "RESOURCE_GROUP_NAME not found in environment. Please add RESOURCE_GROUP_NAME='myExistingResourceName' in .env file and try again"
+      "RESOURCE_GROUP_NAME not found in environment. Please add RESOURCE_GROUP_NAME='myExistingResourceGroupName' in .env file and try again"
     );
   }
   const deploymentName = "TeamsFxToolkitDeployment";

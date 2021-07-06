@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { PluginTypes, PluginBicepSnippet } from "../../api";
+import { PluginTypes, PluginBicepSnippet } from "../../models";
 import * as path from "path";
 
 export function generateBicepFile(): PluginBicepSnippet {

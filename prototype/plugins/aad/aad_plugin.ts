@@ -1,6 +1,6 @@
 
 import * as fs from "fs";
-import { PluginTypes, PluginBicepSnippet } from "../../api";
+import { PluginTypes, PluginBicepSnippet } from "../../models";
 import * as path from "path";
 import * as utils from "../../utils";
 
@@ -33,8 +33,6 @@ export function generateBicepFile(context: any): PluginBicepSnippet {
     
     const variablesTemplateFilePath = path.join(templateDir, 'main.variables.template.bicep');
     const variablesCodeSnippet = utils.generateBicepFiles(variablesTemplateFilePath, context);
-    console.log(variablesCodeSnippet);
-    console.log(context);
 
     let result: PluginBicepSnippet = {
         PluginTypes: PluginTypes.AAD,
@@ -42,7 +40,6 @@ export function generateBicepFile(context: any): PluginBicepSnippet {
         MainVars: variablesCodeSnippet,
         Parameter: JSON.parse(fs.readFileSync(parameterFilePath, "utf8")),
     };
-    console.log(result);
 
     return result;
 }

@@ -1,5 +1,5 @@
 
-module simpleAuthDeploy 'simple_auth.bicep' = {
+module __simpleAuthDeploy__ '__simpleAuthFilePath__' = {
   name: 'simpleAuthWebAppDeploy'
   params: {
     simpleAuthServerFarmsName: simpleAuth_serverFarmsName
@@ -8,11 +8,9 @@ module simpleAuthDeploy 'simple_auth.bicep' = {
     AADClientId: AADClientId
     AADClientSecret: AADClientSecret
     applicationIdUri: applicationIdUri
-    {{#each pluginTypes}}
-    {{#if_equal this 'frontend_hosting'}}
+    {{#contains 'frontend_hosting' pluginTypes}}
     frontendHostingStorageEndpoint: __frontendHostingDeploy__.outputs.endpoint
-    {{/if_equal}}
-    {{/each}}
+    {{/contains}}
     tenantId: tenantId
   }
 }

@@ -1,5 +1,5 @@
 
-module functionDeploy 'function.bicep' = {
+module __functionDeploy__ '__functionFilePath__' = {
   name: 'functionDeploy'
   params: {
     functionAppName: function_webappName
@@ -9,11 +9,8 @@ module functionDeploy 'function.bicep' = {
     AADClientSecret: AADClientSecret
     tenantId: tenantId
     applicationIdUri: applicationIdUri
-    {{#each pluginTypes}}
-    {{#if_equal this 'frontend_hosting'}}
+    {{#contains 'frontend_hosting' pluginTypes}}
     frontendHostingStorageEndpoint: __frontendHostingDeploy__.outputs.endpoint
-    {{/if_equal}}
-    {{/each}}
-    
+    {{/contains}}
   }
 }

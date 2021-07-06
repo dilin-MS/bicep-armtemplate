@@ -1,18 +1,16 @@
 
-{{#each pluginTypes}}
-{{#if_equal this 'aad'}}
-{{#ifIn 'frontend_hosting' ../pluginTypes}}
-{{#ifNotIn 'bot' ../pluginTypes}}
+{{#contains 'aad' pluginTypes}}
+{{#contains 'frontend_hosting' pluginTypes}}
+{{#notContains 'bot' pluginTypes}}
 var applicationIdUri = 'api://${__frontendHostingDeploy__.outputs.domain}/${AADClientId}'
-{{/ifNotIn}}
-{{#ifIn 'bot' ../pluginTypes}}
+{{/notContains}}
+{{#contains 'bot' pluginTypes}}
 var applicationIdUri = 'api://${__frontendHostingDeploy__.outputs.domain}/botid-${AADClientId}'
-{{/ifIn}}
-{{/ifIn}}
-{{#ifNotIn 'frontend_hosting' ../pluginTypes}}
-{{#ifIn 'bot' ../pluginTypes}}
+{{/contains}}
+{{/contains}}
+{{#notContains 'frontend_hosting' pluginTypes}}
+{{#contains 'bot' pluginTypes}}
 var applicationIdUri = 'api://${__botDeploy__.outputs.domain}/botid-${AADClientId}'
-{{/ifIn}}
-{{/ifNotIn}}
-{{/if_equal}}
-{{/each}}
+{{/contains}}
+{{/notContains}}
+{{/contains}}

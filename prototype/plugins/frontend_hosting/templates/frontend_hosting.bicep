@@ -17,7 +17,6 @@ resource frontendHostingStorage 'Microsoft.Storage/storageAccounts@2021-04-01' =
   }
 }
 
-output connectionString string = 'DefaultEndpointsProtocol=https;AccountName=${frontendHostingStorage.name};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', frontendHostingStorage.name), '2019-04-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
 output storageName string = frontendHostingStorage.name
 output endpoint string = frontendHostingStorage.properties.primaryEndpoints.web
 output domain string = replace(replace(frontendHostingStorage.properties.primaryEndpoints.web, 'https://', ''), '/', '')
