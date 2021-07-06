@@ -39,27 +39,41 @@ async function main() {
     // PluginTypes.AzureSql,
     // PluginTypes.Identity,
   ];
-  const parameterString = generateBicepFiles(pluginTypes);
+
+  // 1. Create AAD App
+  const aadInfo: AADPlugin.AADInfo = AADPlugin.createAADApp();
+
+  // 2. generage bicep files
+  const parameterKeys = generateBicepFiles(pluginTypes);
+
+  // 3. Update parameter with value from env
+  const parameterString = updateParameterWithValue(
+    parameterKeys,
+    aadInfo.clientId,
+    aadInfo.clientSecret
+  );
   console.log(`parameters: ${parameterString}`);
 
+  // 3. deploy arm template to azure
   const deploymentResult = await deployArmTemplateToAzure(
     bicepFilesDir,
     parameterString
   );
+  // todo: polling deployment status
+  console.log("Deployment finished: ");
+  console.log(deploymentResult);
 
+  // 4. data plane operation
   const frontendHosting_storageName =
     deploymentResult.properties.outputs.frontendHosting_storageName.value;
   executeDataPlaneOperation(frontendHosting_storageName);
 }
 
 /**
- * Create AAD App Registration and get clientId, clientSecret
+ * Generate bicep files
  */
 function generateBicepFiles(pluginTypes: PluginTypes[]): string {
   utils.ensureDirectoryExists(bicepFilesDir);
-
-  // Create AAD App
-  const aadInfo: AADPlugin.AADInfo = AADPlugin.createAADApp();
 
   let codeSnippets: PluginBicepSnippet[] = [];
   const context = {
@@ -90,7 +104,7 @@ function generateBicepFiles(pluginTypes: PluginTypes[]): string {
     }
   }
 
-  // plugin resources
+  // Resource plugin module
   codeSnippets.forEach((pluginSnippet) => {
     if (pluginSnippet.PluginResources) {
       const pluginResourceDestFilePath = path.join(
@@ -102,7 +116,7 @@ function generateBicepFiles(pluginTypes: PluginTypes[]): string {
         pluginSnippet.PluginResources
       );
       console.log(
-        `Successfully generate resource bicep file: ${pluginResourceDestFilePath}`
+        `Successfully generate resource plugin ${pluginSnippet.PluginTypes} bicep module file: ${pluginResourceDestFilePath}`
       );
     }
   });
@@ -110,13 +124,10 @@ function generateBicepFiles(pluginTypes: PluginTypes[]): string {
   // main.bicep
   generateMainBicepFile(codeSnippets);
 
-  // parameter.json
-  const parameterString: string = getParameters(
-    codeSnippets,
-    aadInfo.clientId,
-    aadInfo.clientSecret
-  );
-  return parameterString;
+  // parameter
+  const parameterKeys: string = getParametersKeys(codeSnippets);
+
+  return parameterKeys;
 }
 
 function generateMainBicepFile(codeSnippets: PluginBicepSnippet[]) {
@@ -163,11 +174,7 @@ function generateMainBicepFile(codeSnippets: PluginBicepSnippet[]) {
   fs.writeFileSync(mainFilePath, mainTemplate);
 }
 
-function getParameters(
-  codeSnippets: PluginBicepSnippet[],
-  clientId: string,
-  clientSecret: string
-): string {
+function getParametersKeys(codeSnippets: PluginBicepSnippet[]): string {
   const parameterTemplateFilePath = path.join(
     templateDir,
     "main.parameter.template.json"
@@ -182,6 +189,15 @@ function getParameters(
       };
     }
   }
+
+  return parameters;
+}
+
+function updateParameterWithValue(
+  parameters: string,
+  clientId: string,
+  clientSecret: string
+): string {
   const parameterContext = {
     TENANT_ID: process.env.TENANT_ID,
     CLIENT_ID: clientId,
