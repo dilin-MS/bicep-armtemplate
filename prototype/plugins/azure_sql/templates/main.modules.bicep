@@ -2,12 +2,12 @@
 module __azureSqlDeploy__ '__azureSqlFilePath__' = {
   name: 'azureSqlDeploy'
   params: {
-    sqlServerName: sqlServerName
-    sqlDatabaseName: sqlDatabaseName
+    sqlServerName: azureSql_serverName
+    sqlDatabaseName: azureSql_databaseName
     AADUser: AADUser
     AADObjectId: AADObjectId
     AADTenantId: tenantId
-    administratorLogin: sqlAdminLogin
-    administratorLoginPassword: sqlAdminLoginPassword
+    administratorLogin: azureSql_adminLogin
+    administratorLoginPassword: azureSql_adminLoginPassword
   }
 }

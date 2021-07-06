@@ -5,10 +5,10 @@
   "AADObjectId": {
     "value": "{{AAD_OBJECT_ID}}"
   },
-  "sqlAdminLogin": {
+  "azureSql_adminLogin": {
     "value": "{{SQL_ADMIN_LOGIN}}"
   },
-  "sqlAdminLoginPassword": {
+  "azureSql_adminLoginPassword": {
     "value": "{{SQL_ADMIN_LOGIN_PASSWORD}}"
   }
 }

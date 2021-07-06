@@ -7,6 +7,8 @@ import * as AADPlugin from "./plugins/aad/aad_plugin";
 import * as FrontendHostingPlugin from "./plugins/frontend_hosting/frontend_hosting_plugin";
 import * as FunctionPlugin from "./plugins/function/function_plugin";
 import * as SimpleAuthPlugin from "./plugins/simple_auth/simple_auth_plugin";
+import * as AzureSqlPlugin from "./plugins/azure_sql/azure_sql_plugin";
+import * as IdentityPlugin from "./plugins/identity/identity_plugin";
 import {
   ResourceManagementClient,
   ResourceManagementModels,
@@ -34,8 +36,11 @@ async function main() {
     PluginTypes.FrontendHosting,
     PluginTypes.Function,
     PluginTypes.SimpleAuth,
+    // PluginTypes.AzureSql,
+    // PluginTypes.Identity,
   ];
   const parameterString = generateBicepFiles(pluginTypes);
+  console.log(`parameters: ${parameterString}`);
 
   const deploymentResult = await deployArmTemplateToAzure(
     bicepFilesDir,
@@ -74,7 +79,14 @@ function generateBicepFiles(pluginTypes: PluginTypes[]): string {
       case PluginTypes.SimpleAuth:
         codeSnippets.push(SimpleAuthPlugin.generateBicepFile(context));
         break;
+      case PluginTypes.AzureSql:
+        codeSnippets.push(AzureSqlPlugin.generateBicepFile());
+        break;
+      case PluginTypes.Identity:
+        codeSnippets.push(IdentityPlugin.generateBicepFile());
+        break;
       default:
+        console.log(`Plugin not supported: ${plugin}`);
     }
   }
 
@@ -170,20 +182,27 @@ function getParameters(
       };
     }
   }
-  const aad_context = {
+  const parameterContext = {
     TENANT_ID: process.env.TENANT_ID,
     CLIENT_ID: clientId,
     CLIENT_SECRET: clientSecret,
     RESOURCE_GROUP_NAME: process.env.RESOURCE_GROUP_NAME,
     SIMPLE_AUTH_SKU: process.env.SIMPLE_AUTH_SKU,
+    AAD_USER: process.env.AAD_USER,
+    AAD_OBJECT_ID: process.env.AAD_OBJECT_ID,
+    SQL_ADMIN_LOGIN: process.env.SQL_ADMIN_LOGIN,
+    SQL_ADMIN_LOGIN_PASSWORD: process.env.SQL_ADMIN_LOGIN_PASSWORD,
   };
   let template = Handlebars.compile(JSON.stringify(parameters));
-  let updatedParameters = template(aad_context);
+  let updatedParameters = template(parameterContext);
   return updatedParameters;
 }
 
 function executeDataPlaneOperation(storageName: string): void {
-  const blobServiceClient = new BlobServiceClient(`https://${storageName}.blob.core.windows.net`, creds);
+  const blobServiceClient = new BlobServiceClient(
+    `https://${storageName}.blob.core.windows.net`,
+    creds
+  );
   const blbServiceProperties: BlobServiceProperties = {
     staticWebsite: {
       enabled: true,

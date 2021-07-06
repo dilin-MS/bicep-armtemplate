@@ -12,5 +12,12 @@ module __functionDeploy__ '__functionFilePath__' = {
     {{#contains 'frontend_hosting' pluginTypes}}
     frontendHostingStorageEndpoint: __frontendHostingDeploy__.outputs.endpoint
     {{/contains}}
+    {{#contains 'azure_sql' pluginTypes}}
+    sqlDatabaseName: __azureSqlDeploy__.outputs.databaseName
+    sqlEndpoint: __azureSqlDeploy__.outputs.sqlEndpoint
+    {{/contains}}
+    {{#contains 'identity' pluginTypes}}
+    identityId: __identityDeploy__.outputs.identityId
+    {{/contains}}
   }
 }
