@@ -1,0 +1,14 @@
+{
+  "AADUser": {
+    "value": "{{AAD_USER}}"
+  },
+  "AADObjectId": {
+    "value": "{{AAD_OBJECT_ID}}"
+  },
+  "azureSql_adminLogin": {
+    "value": "{{SQL_ADMIN_LOGIN}}"
+  },
+  "azureSql_adminLoginPassword": {
+    "value": "{{SQL_ADMIN_LOGIN_PASSWORD}}"
+  }
+}

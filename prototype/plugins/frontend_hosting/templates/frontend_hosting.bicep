@@ -1,7 +1,7 @@
 @minLength(3)
 @maxLength(24)
 @description('Name of Storage Accounts for frontend hosting.')
-param frontend_hosting_storage_name string = 'frontendstg${uniqueString(resourceGroup().id)}'
+param frontend_hosting_storage_name string
 
 resource frontendHostingStorage 'Microsoft.Storage/storageAccounts@2021-04-01' = {
   kind: 'StorageV2'

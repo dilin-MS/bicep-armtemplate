@@ -1,18 +1,15 @@
-param simpleAuthPrefix string
 param sku string
-param simpleAuthServerFarmsName string = '${simpleAuthPrefix}-simple-auth-serverfarms'
-param simpleAuthWebAppName string = '${simpleAuthPrefix}-simple-auth-webapp'
+param simpleAuthServerFarmsName string
+param simpleAuthWebAppName string
 param tenantId string
 param AADClientId string
 @secure()
 param AADClientSecret string
 param applicationIdUri string
 
-{{#each pluginTypes}}
-{{#if_equal this 'frontend_hosting'}}
+{{#contains 'frontend_hosting' pluginTypes}}
 param frontendHostingStorageEndpoint string
-{{/if_equal}}
-{{/each}}
+{{/contains}}
 
 var oauthAuthorityHost = environment().authentication.loginEndpoint
 var aadMetadataAddress = uri(oauthAuthorityHost, '${tenantId}/v2.0/.well-known/openid-configuration')
@@ -56,11 +53,9 @@ resource simpleAuthWebAppSettings 'Microsoft.Web/sites/config@2018-02-01' = {
     CLIENT_ID: AADClientId
     CLIENT_SECRET: AADClientSecret
     OAUTH_AUTHORITY: oauthAuthority
-    {{#each pluginTypes}}
-    {{#if_equal this 'frontend_hosting'}}
+    {{#contains 'frontend_hosting' pluginTypes}}
     TAB_APP_ENDPOINT: frontendHostingStorageEndpoint
-    {{/if_equal}}
-    {{/each}}
+    {{/contains}}
   }  
 }
 

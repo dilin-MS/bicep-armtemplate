@@ -1,37 +1,8 @@
 {
-  "namePrefix": {
-      "value": "{{PROJECT_NAME}}"
+  "resourceGroupName": {
+      "value": "{{RESOURCE_GROUP_NAME}}"
   },
   "tenantId": {
       "value": "{{TENANT_ID}}"
   }
-  {{#each pluginTypes}}
-  {{#if_equal this 'aad_app'}}
-  ,"AADClientId": {
-      "value": "{{../CLIENT_ID}}"
-  },
-  "AADClientSecret":{
-      "value": "{{../CLIENT_SECRET}}"
-  }
-  {{/if_equal}}
-  {{#if_equal this 'simple_auth'}} 
-  ,"simpleAuthWebAppSKU":{
-      "value": "{{../SIMPLE_AUTH_SKU}}"
-  }
-  {{/if_equal}}
-  {{#if_equal this 'azure_sql'}} 
-  ,"AADUser": {
-    "value": "{{../AAD_USER}}"
-  },
-  "AADObjectId": {
-    "value": "{{../AAD_OBJECT_ID}}"
-  },
-  "sqlAdminLogin": {
-    "value": "{{../SQL_ADMIN_LOGIN}}"
-  },
-  "sqlAdminLoginPassword": {
-    "value": "{{../SQL_ADMIN_LOGIN_PASSWORD}}"
-  }
-  {{/if_equal}}
-  {{/each}}
 }

@@ -1,32 +1,28 @@
-param functionPrefix string
-param functionServerfarmsName string = '${functionPrefix}-function-serverfarms'
-param functionAppName string = '${functionPrefix}-functionapp'
+param functionServerfarmsName string
+param functionAppName string
 @minLength(3)
 @maxLength(24)
 @description('Name of Storage Accounts for function backend.')
-param functionStorageName string = 'functionstg${uniqueString(resourceGroup().id)}'
+param functionStorageName string
 param AADClientId string
 @secure()
 param AADClientSecret string
 param tenantId string
 param applicationIdUri string
 
-{{#each pluginTypes}}
-{{#if_equal this 'frontend_hosting'}}
+{{#contains 'frontend_hosting' pluginTypes}}
 param frontendHostingStorageEndpoint string
-{{/if_equal}}
-{{#if_equal this 'azure_sql'}}
+{{/contains}}
+{{#contains 'azure_sql' pluginTypes}}
 param sqlDatabaseName string
 param sqlEndpoint string
-{{/if_equal}}
-{{#if_equal this 'identity'}}
+{{/contains}}
+{{#contains 'identity' pluginTypes}}
 param identityId string
-{{/if_equal}}
-{{/each}}
+{{/contains}}
 
 var oauthAuthorityHost = environment().authentication.loginEndpoint
 var teamsAadIds = '1fec8e78-bce4-4aaf-ab1b-5451cc387264;5e3ce6c0-2b1f-4285-8d4b-75ee78787346'
-
 
 resource functionServerfarms 'Microsoft.Web/serverfarms@2020-06-01' = {
   name: functionServerfarmsName
@@ -95,15 +91,13 @@ resource functionAppAppSettings 'Microsoft.Web/sites/config@2018-02-01' = {
     M365_CLIENT_SECRET: AADClientSecret
     M365_TENANT_ID: tenantId
     M365_AUTHORITY_HOST: oauthAuthorityHost
-    {{#each pluginTypes}}
-    {{#if_equal this 'azure_sql'}}
+    {{#contains 'azure_sql' pluginTypes}}
     SQL_DATABASE_NAME: sqlDatabaseName
     SQL_ENDPOINT: sqlEndpoint
-    {{/if_equal}}
-    {{#if_equal this 'identity'}} 
+    {{/contains}}
+    {{#contains 'identity' pluginTypes}}
     IDENTITY_ID: identityId
-    {{/if_equal}}
-    {{/each}}
+    {{/contains}}
   }
   dependsOn: [
     functionStorage

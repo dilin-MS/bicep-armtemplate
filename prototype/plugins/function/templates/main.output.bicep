@@ -1,0 +1,4 @@
+
+output function_storageAccountName string = __functionDeploy__.outputs.storageAccountName
+output function_appServicePlanName string = __functionDeploy__.outputs.appServicePlanName
+output function_functionEndpoint string = __functionDeploy__.outputs.functionEndpoint

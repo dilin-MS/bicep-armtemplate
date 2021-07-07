@@ -1,0 +1,8 @@
+{
+  "AADClientId": {
+    "value": "{{CLIENT_ID}}"
+  },
+  "AADClientSecret": {
+    "value": "{{CLIENT_SECRET}}"
+  }
+}
