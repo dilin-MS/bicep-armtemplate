@@ -26,6 +26,7 @@ const templateDir = path.join(__dirname, "..", "templates");
 const bicepFilesDir = path.join(__dirname, "..", "bicep");
 const mainFilePath = path.join(bicepFilesDir, "main.bicep");
 const creds = new DefaultAzureCredential();
+let finished = false;
 
 /**
  * This Main function prototypes what solution plugin does.
@@ -59,9 +60,7 @@ async function main() {
     bicepFilesDir,
     parameterString
   );
-  // todo: polling deployment status
-  console.log("Deployment finished: ");
-  console.log(deploymentResult);
+  console.log(`Deployment finished: ${JSON.stringify(deploymentResult, null, 2)}`);
 
   // 4. data plane operation
   const frontendHosting_storageName =
@@ -266,20 +265,38 @@ async function deployArmTemplateToAzure(
   }
   const deploymentName = "TeamsFxToolkitDeployment";
   try {
-    const result = await client.deployments.createOrUpdate(
+    const result = client.deployments.createOrUpdate(
       resourceGroupName,
       deploymentName,
       deploymentParameters
-    );
-    console.log(
-      `Successfully deploy arm template to resource group ${resourceGroupName}.`
-    );
+    ).then((result)=>{
+      console.log(
+        `Successfully deploy arm template to resource group ${resourceGroupName}.`
+      );
+      finished = true;
+      return result;
+    });
+    pollDeploymentStatus(client);
     return result;
   } catch (err) {
     console.log(
       `Fail to deploy arm template to resource group ${resourceGroupName}. Error message: ${err.message}`
     );
   }
+}
+
+async function pollDeploymentStatus(client: ResourceManagementClient): Promise<void> {
+  console.log("polling deployment status...");
+
+  setTimeout(async () => {
+    if (!finished) {
+      let deployments = await client.deployments.listByResourceGroup(process.env.RESOURCE_GROUP_NAME);
+      deployments.forEach(deployment => {
+        console.log(`[${deployment.properties.timestamp}] ${deployment.name} -> ${deployment.properties.provisioningState}`);
+      });
+      pollDeploymentStatus(client);
+    }
+  }, 10000);
 }
 
 main().catch((err) => {
