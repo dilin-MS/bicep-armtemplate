@@ -8,8 +8,15 @@ This project is a prototype of Teamsfx Toolkit ARM support using Bicep.
     TENANT_ID="you-tenant-id"
     AZURE_SUBSCRIPTION_ID="your-subscription-id"
 
-    PROJECT_NAME="your-project-name"
-    SIMPLE_AUTH_SKU="B1"
+    RESOURCE_GROUP_NAME="your-project-name"
+
+    SQL_ADMIN_LOGIN="your-sql-username"
+    SQL_ADMIN_LOGIN_PASSWORD="your-sql-password"
+    AAD_USER="your-aad-name"
+    AAD_OBJECT_ID="your-aad-object-id"
+
+    SERVICE_PRINCIPAL_APPID="your-service-principal-appid"
+    SERVICE_PRINCIPAL_PASSWORD="your-service-principal-password"
     ```
 1. In the root folder of prototype, run the below commands:
     ```

@@ -13,7 +13,7 @@ import {
   ResourceManagementClient,
   ResourceManagementModels,
 } from "@azure/arm-resources";
-import { DefaultAzureCredential } from "@azure/identity";
+import { ClientSecretCredential } from "@azure/identity";
 import {
   BlobServiceClient,
   BlobServiceProperties,
@@ -25,7 +25,11 @@ const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID;
 const templateDir = path.join(__dirname, "..", "templates");
 const bicepFilesDir = path.join(__dirname, "..", "bicep");
 const mainFilePath = path.join(bicepFilesDir, "main.bicep");
-const creds = new DefaultAzureCredential();
+const creds = new ClientSecretCredential(
+  process.env.TENANT_ID,
+  process.env.SERVICE_PRINCIPAL_APPID,
+  process.env.SERVICE_PRINCIPAL_PASSWORD
+);
 let finished = false;
 
 /**
@@ -37,8 +41,8 @@ async function main() {
     PluginTypes.FrontendHosting,
     PluginTypes.Function,
     PluginTypes.SimpleAuth,
-    // PluginTypes.AzureSql,
-    // PluginTypes.Identity,
+    PluginTypes.AzureSql,
+    PluginTypes.Identity,
   ];
 
   // 1. Create AAD App
@@ -60,7 +64,9 @@ async function main() {
     bicepFilesDir,
     parameterString
   );
-  console.log(`Deployment finished: ${JSON.stringify(deploymentResult, null, 2)}`);
+  console.log(
+    `Deployment finished: ${JSON.stringify(deploymentResult, null, 2)}`
+  );
 
   // 4. data plane operation
   const frontendHosting_storageName =
@@ -265,18 +271,19 @@ async function deployArmTemplateToAzure(
   }
   const deploymentName = "TeamsFxToolkitDeployment";
   try {
-    const result = client.deployments.createOrUpdate(
-      resourceGroupName,
-      deploymentName,
-      deploymentParameters
-    ).then((result)=>{
-      console.log(
-        `Successfully deploy arm template to resource group ${resourceGroupName}.`
-      );
-      finished = true;
-      return result;
-    });
-    pollDeploymentStatus(client);
+    const result = client.deployments
+      .createOrUpdate(resourceGroupName, deploymentName, deploymentParameters)
+      .then((result) => {
+        console.log(
+          `Successfully deploy arm template to resource group ${resourceGroupName}.`
+        );
+        return result;
+      })
+      .finally(() => {
+        finished = true;
+      });
+    let deploymentStartTime = Date.now();
+    pollDeploymentStatus(client, deploymentStartTime);
     return result;
   } catch (err) {
     console.log(
@@ -285,16 +292,34 @@ async function deployArmTemplateToAzure(
   }
 }
 
-async function pollDeploymentStatus(client: ResourceManagementClient): Promise<void> {
+async function pollDeploymentStatus(
+  client: ResourceManagementClient,
+  deploymentStartTime: number
+): Promise<void> {
   console.log("polling deployment status...");
 
   setTimeout(async () => {
     if (!finished) {
-      let deployments = await client.deployments.listByResourceGroup(process.env.RESOURCE_GROUP_NAME);
-      deployments.forEach(deployment => {
-        console.log(`[${deployment.properties.timestamp}] ${deployment.name} -> ${deployment.properties.provisioningState}`);
+      let deployments = await client.deployments.listByResourceGroup(
+        process.env.RESOURCE_GROUP_NAME
+      );
+      deployments.forEach((deployment) => {
+        if (deployment.properties.timestamp.getTime() > deploymentStartTime) {
+          console.log(
+            `[${deployment.properties.timestamp}] ${deployment.name} -> ${deployment.properties.provisioningState}`
+          );
+          if (deployment.properties.error) {
+            console.log(
+              `Error message: ${JSON.stringify(
+                deployment.properties.error,
+                null,
+                2
+              )}`
+            );
+          }
+        }
       });
-      pollDeploymentStatus(client);
+      pollDeploymentStatus(client, deploymentStartTime);
     }
   }, 10000);
 }
