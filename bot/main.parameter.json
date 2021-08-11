@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "bot_aadClientId": {
+          "value": "9a8c6dea-cc95-49b9-9288-838109cd600c"
+      },
+      "bot_aadClientSecret": {
+          "value": "xxx"
+      },
+      "resourceBaseName":{
+          "value": "dilinonlybot"
+      },
+      "m365ClientId": {
+          "value": "xxx"
+      },
+      "m365ClientSecret": {
+          "value": "xxx"
+      },
+      "m365TenantId": {
+          "value": "xxx"
+      },
+      "m365OauthAuthorityHost": {
+          "value": "xxx"
+      },
+      "m365ApplicationIdUri": {
+          "value": "xxx"
+      }
+    }
+  }
